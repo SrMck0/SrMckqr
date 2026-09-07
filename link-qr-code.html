@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Link → QR Code</title>
+
+  <!-- Biblioteca para gerar QR Code -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      background:
+        radial-gradient(circle at top, #32105c 0%, transparent 35%),
+        linear-gradient(135deg, #0b0710, #160b21 55%, #0b0710);
+      color: #fff;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 480px;
+      padding: 32px;
+      border: 1px solid rgba(190, 80, 255, 0.25);
+      border-radius: 24px;
+      background: rgba(20, 12, 29, 0.88);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(12px);
+      text-align: center;
+    }
+
+    .icon {
+      width: 70px;
+      height: 70px;
+      margin: 0 auto 18px;
+      display: grid;
+      place-items: center;
+      border-radius: 20px;
+      background: linear-gradient(135deg, #8a2be2, #c84dff);
+      box-shadow: 0 10px 30px rgba(165, 55, 255, 0.3);
+      font-size: 34px;
+    }
+
+    h1 {
+      font-size: 30px;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      color: #bdb2c7;
+      margin-bottom: 26px;
+      line-height: 1.5;
+    }
+
+    .input-area {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+
+    input {
+      flex: 1;
+      min-width: 0;
+      padding: 15px 16px;
+      border: 1px solid #3d2a4b;
+      border-radius: 13px;
+      outline: none;
+      background: #100a16;
+      color: #fff;
+      font-size: 15px;
+      transition: 0.2s;
+    }
+
+    input:focus {
+      border-color: #a43cff;
+      box-shadow: 0 0 0 3px rgba(164, 60, 255, 0.12);
+    }
+
+    button {
+      border: none;
+      border-radius: 13px;
+      padding: 14px 18px;
+      color: white;
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: transform 0.15s, opacity 0.15s;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    .generate {
+      background: linear-gradient(135deg, #8a2be2, #b43cff);
+    }
+
+    .clear {
+      background: #2b2033;
+    }
+
+    .qr-area {
+      display: none;
+      margin-top: 22px;
+      padding: 20px;
+      border-radius: 18px;
+      background: #fff;
+    }
+
+    #qrcode {
+      width: 250px;
+      max-width: 100%;
+      height: auto;
+      display: block;
+      margin: auto;
+    }
+
+    .buttons {
+      display: flex;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .buttons button {
+      flex: 1;
+    }
+
+    .download {
+      background: #7124b8;
+    }
+
+    .message {
+      min-height: 20px;
+      margin-top: 12px;
+      color: #ff8d8d;
+      font-size: 14px;
+    }
+
+    .footer {
+      margin-top: 24px;
+      color: #74687c;
+      font-size: 12px;
+    }
+
+    @media (max-width: 520px) {
+      .container {
+        padding: 24px 18px;
+      }
+
+      .input-area {
+        flex-direction: column;
+      }
+
+      .input-area button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="container">
+    <div class="icon">▦</div>
+
+    <h1>Link → QR Code</h1>
+    <p class="subtitle">
+      Cole um link abaixo e transforme ele em um QR Code em segundos.
+    </p>
+
+    <div class="input-area">
+      <input
+        id="link"
+        type="url"
+        placeholder="https://exemplo.com"
+        autocomplete="off"
+      >
+      <button class="generate" onclick="gerarQR()">Gerar</button>
+    </div>
+
+    <div class="message" id="message"></div>
+
+    <section class="qr-area" id="qrArea">
+      <canvas id="qrcode"></canvas>
+
+      <div class="buttons">
+        <button class="download" onclick="baixarQR()">Baixar PNG</button>
+        <button class="clear" onclick="limpar()">Limpar</button>
+      </div>
+    </section>
+
+    <div class="footer">
+      Seu link é usado apenas para gerar o QR Code.
+    </div>
+  </main>
+
+  <script>
+    const input = document.getElementById("link");
+    const qrArea = document.getElementById("qrArea");
+    const message = document.getElementById("message");
+    const canvas = document.getElementById("qrcode");
+
+    const qr = new QRious({
+      element: canvas,
+      size: 500,
+      value: ""
+    });
+
+    function gerarQR() {
+      let link = input.value.trim();
+
+      message.textContent = "";
+
+      if (!link) {
+        message.textContent = "Digite ou cole um link primeiro.";
+        qrArea.style.display = "none";
+        return;
+      }
+
+      // Adiciona HTTPS automaticamente se o usuário não colocou protocolo.
+      if (!/^https?:\/\//i.test(link)) {
+        link = "https://" + link;
+      }
+
+      try {
+        new URL(link);
+      } catch {
+        message.textContent = "Esse link não parece ser válido.";
+        qrArea.style.display = "none";
+        return;
+      }
+
+      qr.value = link;
+      qrArea.style.display = "block";
+    }
+
+    function baixarQR() {
+      const link = document.createElement("a");
+      link.download = "qrcode.png";
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+    }
+
+    function limpar() {
+      input.value = "";
+      message.textContent = "";
+      qrArea.style.display = "none";
+      qr.value = "";
+      input.focus();
+    }
+
+    input.addEventListener("keydown", function(event) {
+      if (event.key === "Enter") {
+        gerarQR();
+      }
+    });
+  </script>
+</body>
+</html>
